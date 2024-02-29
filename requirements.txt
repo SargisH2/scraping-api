@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+selenium
+pydantic
+beautifulsoup4
+webdriver_manager
+lxml
