@@ -124,7 +124,6 @@ async def get_content(input: SearchQuery):
     chrome_options.add_argument("--disable-dev-shm-usage")
 
     
-    # Ensure you have the ChromeDriver executable in your PATH or specify its path with the executable_path argument
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
@@ -137,9 +136,14 @@ async def get_content(input: SearchQuery):
     except Exception as e:
         driver.quit()
         return {"content": 'Search failed: '+str(e)}
+    finally:
+        driver.quit()
+    
+    if not results_dict:
+        return {"content": "No results found"}
     result = list(results_dict.keys())[0]
     url = list(results_dict.values())[0]
-    
+    driver = webdriver.Chrome(options=chrome_options)
     try:
         driver.get(url)
         element = WebDriverWait(driver, 10).until(
