@@ -19,8 +19,7 @@ def class_to_key(class_part):
 
 def get_details(detail_block):
     return_info = {}
-    sections = detail_block.find_all('div', recursive=False)
-    details, numbers = sections[0], sections[-1]
+    details, numbers = detail_block.find('div.product-block__description'), detail_block.find('div.product-block__seo-info')
     
     number_details = numbers.select('div.product-block__seo-info-text')[0].text.split(':')[1]
     number_details = {'trade_numbers': list(map(lambda x: x.strip(), number_details.split('\n')))}
@@ -113,48 +112,38 @@ app = FastAPI()
 
 class SearchQuery(BaseModel):
     query: str
-    
+
+chrome_options = Options()
+chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
 
 @app.post("/get-content/")
 async def get_content(input: SearchQuery):
-    chrome_options = Options()
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-
-    
     driver = webdriver.Chrome(options=chrome_options)
-
-    try:
-        driver.get(BASE_URL+input.query)
-        element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "listing-title__name"))
-        )
-        content = driver.page_source
-        results_dict = get_urls(content)
-    except Exception as e:
-        driver.quit()
-        return {"content": 'Search failed: '+str(e)}
-    finally:
-        driver.quit()
+    driver.get(BASE_URL+input.query)
+    element = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "listing-title__name"))
+    )
+    content = driver.page_source
+    results_dict = get_urls(content)
+    driver.quit()
     
     if not results_dict:
         return {"content": "No results found"}
-    result = list(results_dict.keys())[0]
+    search_result = list(results_dict.keys())[0]
     url = list(results_dict.values())[0]
+    
     driver = webdriver.Chrome(options=chrome_options)
-    try:
-        driver.get(url)
-        element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "product-block__description-title"))
-        )
-        content = driver.page_source
-        scraped_data = get_autodoc_json(content)
-    except Exception as e:
-        driver.quit()
-        raise HTTPException(status_code=500, detail=f"Failed to load content from {url}: {str(e)}")
-    finally:
-        driver.quit()
+    driver.get(url)
+    element = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "product-block__description-title"))
+    )
+    content = driver.page_source
+    scraped_data = get_autodoc_json(content)
+        
+    scraped_data['url'] = url
+    driver.quit()
 
-    return {result: scraped_data}
+    return {search_result: scraped_data}
