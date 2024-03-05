@@ -47,32 +47,28 @@ def scrape_bottom_blocks(info_blocks):
     if len(info_blocks) > 1:
         block_container = info_blocks[0].find('div', recursive=False)
         blocks = block_container.find_all('div', recursive=False)
-        for i, block in enumerate(blocks):
-            print('Scraping bottom block', i)
+        for block in blocks:
             block_name = block.get('class')[0]
             blocktitle = block.select(f'div.{block_name}__title')[0].get_text().strip().lower().replace(' ', '_')
-            block_content = []
-            content_lists = block.find_all('ul')
-            for content_list in content_lists:
-                if 'equivalents' not in blocktitle:
-                    list_data = [li_tag.get_text().strip() for li_tag in content_list.select('li')]
-                else:
-                    list_data = {}
-                    for li_tag in content_list.select('li'):
-                        if len(li_tag.contents) == 3 and li_tag.contents[0] == '\n':
-                            k, w = li_tag.contents[1:]
-                            list_data.update({
-                                k.get_text().strip(): w.get_text().strip()
-                            })
-                        
-                if list_data: block_content.append(list_data)
+            
+            if 'cars' in blocktitle:
+                scraped_content = [comp_div.get_text(strip=True) for comp_div in block.find_all('div', class_='compatibility__maker-title')]
+            elif 'oem' in blocktitle:
+                scraped_content = [li_tag.get_text(strip=True) for li_tag in block.find_all('li')]
+            elif 'equivalents' in blocktitle:
+                scraped_content = {}
+                for li_tag in block.find_all('li'):
+                    if len(li_tag.contents) == 3 and li_tag.contents[0] == '\n':
+                        k, w = li_tag.contents[1:]
+                        scraped_content.update({
+                            k.get_text().strip(): w.get_text().strip()
+                        })
                 
-            if not block_content:
+            if not scraped_content:
                 continue
-            if len(block_content) == 1:
-                block_content = block_content[0]
+            
             blocks_content.update({
-                blocktitle: block_content
+                blocktitle: scraped_content
             })
     return blocks_content
 
@@ -111,7 +107,7 @@ def get_price_info(pricing_block):
         
     return return_info
 
-def get_onlinecarparts_json(content):
+def get_onlinecarparts_json(content, images):
     soup = BeautifulSoup(content, 'html.parser')
     product_page = soup.find(attrs={'id':'main'})
     
@@ -144,18 +140,32 @@ def get_onlinecarparts_json(content):
     pricing_block = product_info.select('div.product__info')[0]
     pricing_details = get_price_info(pricing_block)
     return_obj.update(pricing_details)
+      
+    # images
+    if images:
+        images_block = product_info.find('div', class_='product__pictures')
+        if images_block:
+            images = images_block.find_all('img')
+            image_links = [image['src'] for image in images if 'brands' not in image['src']]
+
+            return_obj.update({
+                'images': image_links
+            })
 
     return return_obj
     
-def run_onlinecarparts_page_scraper(url):
+def run_onlinecarparts_page_scraper(url: str, get_images: bool = True):
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(url)
     element = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, "product"))
     )
     content = driver.page_source
-    scraped_data = get_onlinecarparts_json(content)
+    scraped_data = get_onlinecarparts_json(content, images = get_images)
         
     scraped_data['url'] = url
     driver.quit()
     return scraped_data
+
+
+print(run_onlinecarparts_page_scraper('https://www.onlinecarparts.co.uk/nty-14675710.html'))

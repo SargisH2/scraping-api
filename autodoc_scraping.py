@@ -24,22 +24,19 @@ def find_in_autodoc(query):
     return results_dict
 
 
-def run_autodoc_page_scraper(url):
+def run_autodoc_page_scraper(url: str, get_images: bool = True):
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(url)
     element = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, "product-block__description-title"))
     )
     content = driver.page_source
-    scraped_data = get_autodoc_json(content)
+    scraped_data = get_autodoc_json(content, images = get_images)
         
     scraped_data['url'] = url
     driver.quit()
     return scraped_data
     
-
-    
-
 def class_to_key(class_part):
     dct = {
         'icon-text--availability': 'availability',
@@ -84,7 +81,22 @@ def get_pricing(pricing_block):
     
     return return_info
 
-def get_autodoc_json(content):
+def get_images(images_block):
+    images = images_block.find_all('img')
+    image_links = [image['src'] for image in images if 'brands' not in image['src']]
+    return image_links
+
+def get_compatibility(compatibility_block):
+    car_tags = compatibility_block.find_all('div', class_='product-info-block__item')
+    cars = [tag.get_text(strip=True) for tag in car_tags]
+    return cars
+
+def get_oem(oem_block):
+    oem_tags = oem_block.find_all('a', class_='product-oem__link')
+    oem_numbers = [tag.get_text(strip=True) for tag in oem_tags]
+    return oem_numbers
+
+def get_autodoc_json(content, images):
     soup = BeautifulSoup(content, 'html.parser')
     
     # product section
@@ -118,6 +130,32 @@ def get_autodoc_json(content):
     pricing_block = product_info.select('div.col-12.col-md-6.col-lg-4')[1]
     pricing_details = get_pricing(pricing_block)
     return_obj.update(pricing_details)
+    
+    # compatibility block
+    compatibility_block = soup.find('div', id='compatibility')
+    if compatibility_block:
+        compatibility = get_compatibility(compatibility_block)
+        if compatibility:
+            return_obj.update({
+                'compatibility': compatibility
+            })
+    
+    # OE block
+    oem_block = soup.find('div', id='oem')
+    if oem_block:
+        oem = get_oem(oem_block)
+        if oem:
+            return_obj.update({
+                'oem': oem
+            })
+        
+    #images
+    if images:
+        images_block = product_info.select('div.product-gallery')[0]
+        image_links = get_images(images_block)
+        return_obj.update({
+            'images': image_links
+        })
     
     return return_obj
 

@@ -8,26 +8,29 @@ app = FastAPI()
 
 class SearchQuery(BaseModel):
     query: str
+    images: bool = True
 
 @app.post("/get-content-autodoc/")
 async def get_content_autodoc(input: SearchQuery):
+    get_images = input.images
     results_dict = find_in_autodoc(input.query)
     if not results_dict:
         return {"content": "No results found"}
     finded_item = list(results_dict.keys())[0]
     url = list(results_dict.values())[0]
-    scraped_data = run_autodoc_page_scraper(url)
+    scraped_data = run_autodoc_page_scraper(url, get_images = get_images)
     
     return scraped_data
 
 @app.post("/get-content-onlinecarparts/")
 async def get_content_onlinecarparts(input: SearchQuery):
+    get_images = input.images
     results_dict = find_in_onlinecarparts(input.query)
     if not results_dict:
         return {"content": "No results found"}
     finded_item = list(results_dict.keys())[0]
     url = list(results_dict.values())[0]
-    scraped_data = run_onlinecarparts_page_scraper(url)
+    scraped_data = run_onlinecarparts_page_scraper(url, get_images = get_images)
     
     return scraped_data
 
