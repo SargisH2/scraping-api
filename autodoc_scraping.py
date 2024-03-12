@@ -12,15 +12,18 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 
-def find_in_autodoc(query):
+def find_in_autodoc(query, supplier = None):
+    url = BASE_URL+query
+    if supplier:
+        url += '&supplier%5B%5D='+supplier
     driver = webdriver.Chrome(options=chrome_options)
-    driver.get(BASE_URL+query)
+    driver.get(url)
     element = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, "listing-title__name"))
     )
     content = driver.page_source
-    results_dict = get_urls(content)
     driver.quit()
+    results_dict = get_urls(content)
     return results_dict
 
 
@@ -96,6 +99,17 @@ def get_oem(oem_block):
     oem_numbers = [tag.get_text(strip=True) for tag in oem_tags]
     return oem_numbers
 
+def get_similar(similar_block):
+    items = similar_block.find_all(class_='product-similar-spec__row-link')
+    items_structured = [
+        {
+            "supplier": item.find_all('span')[0].get_text(strip=True),
+            "part": item.find_all('span')[1].get_text(strip=True),
+            'url': item['href'] if item.name == 'a' else None
+        } for item in items
+    ]
+    return items_structured
+
 def get_autodoc_json(content, images):
     soup = BeautifulSoup(content, 'html.parser')
     
@@ -156,6 +170,15 @@ def get_autodoc_json(content, images):
         return_obj.update({
             'images': image_links
         })
+        
+    # similar products
+    similar_items_block = soup.find('div', class_='product-similar-spec')
+    if similar_items_block:
+        similar_items = get_similar(similar_items_block)
+        return_obj.update({
+            'similar_products': similar_items
+        })
+    
     
     return return_obj
 

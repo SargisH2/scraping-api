@@ -166,6 +166,3 @@ def run_onlinecarparts_page_scraper(url: str, get_images: bool = True):
     scraped_data['url'] = url
     driver.quit()
     return scraped_data
-
-
-print(run_onlinecarparts_page_scraper('https://www.onlinecarparts.co.uk/nty-14675710.html'))

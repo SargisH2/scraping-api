@@ -13,7 +13,7 @@ class SearchQuery(BaseModel):
 @app.post("/get-content-autodoc/")
 async def get_content_autodoc(input: SearchQuery):
     get_images = input.images
-    results_dict = find_in_autodoc(input.query)
+    results_dict = find_in_autodoc(input.query, supplier = '10706')
     if not results_dict:
         return {"content": "No results found"}
     finded_item = list(results_dict.keys())[0]
