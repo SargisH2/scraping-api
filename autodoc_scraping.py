@@ -105,7 +105,7 @@ def get_similar(similar_block):
         {
             "supplier": item.find_all('span')[0].get_text(strip=True),
             "part": item.find_all('span')[1].get_text(strip=True),
-            'url': item['href'] if item.name == 'a' else None
+            'url': item['href'] if item.name == 'a' else ''
         } for item in items
     ]
     return items_structured
