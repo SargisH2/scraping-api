@@ -1,8 +1,8 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
 # More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
+# More info on Python, GitHub Actions, and Azure Functions: https://aka.ms/python-webapps-actions
 
-name: Build and deploy Python app to Azure Web App - scraping-api-app
+name: Build and deploy Python project to Azure Function App - scraping-api-app
 
 on:
   push:
@@ -10,32 +10,36 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
+  PYTHON_VERSION: '3.10' # set this to the python version to use (supports 3.6, 3.7, 3.8)
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python version
+      - name: Setup Python version
         uses: actions/setup-python@v1
         with:
-          python-version: '3.10'
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
-      
+
       - name: Install dependencies
         run: pip install -r requirements.txt
-        
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
+
+      # Optional: Add step to run tests here
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
 
-      - name: Upload artifact for deployment jobs
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
           name: python-app
@@ -48,7 +52,7 @@ jobs:
     needs: build
     environment:
       name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      url: ${{ steps.deploy-to-function.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
 
@@ -59,20 +63,22 @@ jobs:
           name: python-app
 
       - name: Unzip artifact for deployment
-        run: unzip release.zip
-
-      
+        run: unzip release.zip     
+        
       - name: Login to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4D891D030AF743B9951455782E76192E }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_91200E4BDAAA4E5AA4EFFF5C0DD6178D }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_210FA48EE9254FEF875D6977F518B165 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_922D6215A11849ABA5DC17FD52447A11 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_915A0A83F5A547B1B08F8830387FB24C }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7F8A8102693545F3B23711F825ED60D6 }}
 
-      - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v2
-        id: deploy-to-webapp
+      - name: 'Deploy to Azure Functions'
+        uses: Azure/functions-action@v1
+        id: deploy-to-function
         with:
           app-name: 'scraping-api-app'
           slot-name: 'Production'
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
           
