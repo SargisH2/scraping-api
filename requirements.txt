@@ -5,3 +5,4 @@ pydantic
 beautifulsoup4
 webdriver_manager
 lxml
+azure-functions

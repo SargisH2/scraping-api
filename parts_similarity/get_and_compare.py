@@ -1,3 +1,4 @@
+# vertexai.init(project="capable-matrix-408007", location="europe-west1") ##init google accoount
 import requests
 import json
 
@@ -50,7 +51,7 @@ def scrape_data():
             similar_item_data = response_similar_item.json()
             RESULTS_LIST.append(similar_item_data)
             print('Done')
-            break ####
+            break #### for scraping only 1 recomended item
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(RESULTS_LIST, f)
     
@@ -67,7 +68,7 @@ import vertexai
 from vertexai.preview.generative_models import GenerativeModel, Part
 import vertexai.preview.generative_models as generative_models
 
-def split_raw_data(item_dict): #return Part objects for images and text data
+def split_raw_data(item_dict): #return Vertex ai Part objects for images and text data
     images = item_dict.get('images')
     image_parts = []
     if images:
