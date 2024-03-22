@@ -1,2 +1,4 @@
 Dockerfile
 __pycache__/
+.python_packages
+.venv
