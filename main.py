@@ -17,7 +17,6 @@ class SearchQuery(BaseModel):
     is_page: bool = False
     depth: int = 2
     supplier: str = "motorad"
-    
 max_depth = 0
 
 @app.post("/get-content-autodoc/")
