@@ -27,14 +27,19 @@ def find_in_autodoc(query, supplier = None):
     return results_dict
 
 
-def run_autodoc_page_scraper(url: str, get_images: bool = True):
+def run_autodoc_page_scraper(url: str):
     driver = webdriver.Chrome(options=chrome_options)
-    driver.get(url)
+    try:
+        driver.get(url)
+    except:
+        print('\n\n', url)
+        return
+
     element = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, "product-block__description-title"))
     )
     content = driver.page_source
-    scraped_data = get_autodoc_json(content, images = get_images)
+    scraped_data = get_autodoc_json(content)
         
     scraped_data['url'] = url
     driver.quit()
@@ -110,7 +115,7 @@ def get_similar(similar_block):
     ]
     return items_structured
 
-def get_autodoc_json(content, images):
+def get_autodoc_json(content):
     soup = BeautifulSoup(content, 'html.parser')
     
     # product section
@@ -163,13 +168,11 @@ def get_autodoc_json(content, images):
                 'oem': oem
             })
         
-    #images
-    if images:
-        images_block = product_info.select('div.product-gallery')[0]
-        image_links = get_images(images_block)
-        return_obj.update({
-            'images': image_links
-        })
+    images_block = product_info.select('div.product-gallery')[0]
+    image_links = get_images(images_block)
+    return_obj.update({
+        'images': image_links
+    })
         
     # similar products
     similar_items_block = soup.find('div', class_='product-similar-spec')
