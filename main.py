@@ -16,12 +16,9 @@ class SearchQuery(BaseModel):
     query: str
     is_page: bool = False
     depth: int = 2
-<<<<<<< HEAD
-=======
     supplier: str = "motorad"
     
 max_depth = 0
->>>>>>> treebranch
 
 @app.post("/get-content-autodoc/")
 async def get_content_autodoc(input: SearchQuery):
