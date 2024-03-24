@@ -49,7 +49,12 @@ def get_content_autodoc(input: SearchQuery):
         scraped_data = run_autodoc_page_scraper(url)
         
     # Get info about similar items
-    urls = [item['url'] for item in scraped_data['similar_products'] if item['url']]
+    similars = scraped_data.get('similar_products')
+    if similars:
+        urls = [item['url'] for item in similars if item['url']]
+    else:
+        return {"content": "No results found"}
+    
     similar_keys = [url.split('/')[-1] for url in urls]
     
     # key - product code for this item, update items_tree and items_list for current item
@@ -70,6 +75,7 @@ def get_content_autodoc(input: SearchQuery):
             req_obj.is_page = True
             req_obj.depth = depth -1
             new_items = get_content_autodoc(req_obj)
+            if new_items.get('content') == "No results found": continue
             items_list.extend(new_items['items'])
             items_tree.update(new_items['tree'])
             new_key = url.split('/')[-1]
