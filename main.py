@@ -18,13 +18,17 @@ class SearchQuery(BaseModel):
     is_page: bool = False
     depth: int = 2
     supplier: str = "motorad"
+    query_id: str = None
     
 
 @app.post("/get-content-autodoc/")
 async def process_request(background_tasks: BackgroundTasks, input: SearchQuery):
     # Add the long process to the background tasks
-    background_tasks.add_task(get_content_autodoc, input)
-    return {"message": "Processing started, you'll be notified upon completion."}
+    if input.webhook_url:
+        background_tasks.add_task(get_content_autodoc, input)
+        return {"message": "Processing started, you'll be notified upon completion."}
+    else:
+        return get_content_autodoc(input)
 
 # Process the request
 def get_content_autodoc(input: SearchQuery):
@@ -88,6 +92,9 @@ def get_content_autodoc(input: SearchQuery):
     if input.is_page:
         return return_obj
     else:
+        return_obj.update({
+            'query_id': input.query_id
+        })
         requests.post(input.webhook_url, json=return_obj)
 
 # @app.post("/get-content-onlinecarparts/")
