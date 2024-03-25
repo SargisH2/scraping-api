@@ -82,7 +82,6 @@ def get_content_autodoc(input: SearchQuery):
             if items_tree.get(key) and new_key in items_tree.values():
                 items_tree[key][new_key] = new_items['tree'][new_key]
                 
-        print("\n\n", "Done for depth", depth, "\n\n")
     
     # Prepare results, send to the webhook or return for recursion case
     return_obj =  {
@@ -95,13 +94,19 @@ def get_content_autodoc(input: SearchQuery):
             'tree': items_tree if input.is_page else {key: build_tree(key, items_tree, depth+1)},
             'items': items_list
         }
+    
+    print("\n\n", "Done for depth", depth, "\n\n")
     if input.is_page:
         return return_obj
     else:
         return_obj.update({
             'query_id': input.query_id
         })
-        requests.post(input.webhook_url, json=return_obj)
+        if input.webhook_url:
+            requests.post(input.webhook_url, json=return_obj)
+        else:
+            return return_obj
+            
 
 # @app.post("/get-content-onlinecarparts/")
 # async def get_content_onlinecarparts(input: SearchQuery):
